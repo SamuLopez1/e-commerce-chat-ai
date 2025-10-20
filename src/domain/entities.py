@@ -126,17 +126,24 @@ class ChatContext:
     
     def format_for_prompt(self) -> str:
         """
-        TODO: Formatea los mensajes para incluirlos en el prompt de IA
-        Formato esperado:
-        "Usuario: mensaje del usuario
-        Asistente: respuesta del asistente
-        Usuario: otro mensaje
-        ..."
-        
-        Pista: Itera sobre get_recent_messages() y construye el string
+        Devuelve los últimos N mensajes en formato requerido por los tests
+        y por el prompt del LLM: 'user: ...' / 'assistant: ...'.
+        Normaliza posibles variantes como 'Usuario'/'Asistente'.
         """
-        lines: list[str] = []
-        for m in self.get_recent_messages():
-            prefix = "Usuario" if m.is_from_user() else "Asistente"
-            lines.append(f"{prefix}: {m.message}")
+        # Toma los últimos N mensajes (o todos si max_messages=0/None)
+        msgs = self.messages[-self.max_messages:] if self.max_messages else self.messages
+
+        role_map = {
+            "user": "user",
+            "assistant": "assistant",
+            "usuario": "user",
+            "asistente": "assistant",
+        }
+
+        lines = []
+        for m in msgs:
+            raw_role = (m.role or "").strip().lower()
+            role = role_map.get(raw_role, "user")  # por defecto 'user' si es desconocido
+            lines.append(f"{role}: {m.message}")
+
         return "\n".join(lines)

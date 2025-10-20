@@ -1,6 +1,13 @@
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test.py", "test_*.py", "*_test.py"]
-python_classes = ["Test*", "Test"]
-python_functions = ["test*"]
-addopts = "-q"
+[tool.coverage.run]
+source = [
+  "src/application",
+  "src/domain",
+]
+# (Opcional) si quieres excluir helpers o tipos
+omit = [
+  "**/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

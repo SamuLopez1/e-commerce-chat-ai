@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 from src.domain.entities import Product, ChatMessage, ChatContext
 
@@ -51,18 +51,18 @@ def test_product_is_available_and_stock_ops():
 # ───────────────── Tests de ChatMessage ─────────────────
 
 def test_chatmessage_validations_ok():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     m = ChatMessage(id=None, session_id="s1", role="user", message="hola", timestamp=now)
     assert m.role == "user"
     assert m.message == "hola"
 
 def test_chatmessage_invalid_role():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     with pytest.raises(ValueError):
         ChatMessage(id=None, session_id="s1", role="admin", message="hola", timestamp=now)
 
 def test_chatmessage_empty_message():
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     with pytest.raises(ValueError):
         ChatMessage(id=None, session_id="s1", role="user", message="   ", timestamp=now)
 
@@ -70,7 +70,7 @@ def test_chatmessage_empty_message():
 # ───────────────── Tests de ChatContext ─────────────────
 
 def test_chatcontext_format_for_prompt_keeps_last_n_and_format():
-    base = datetime.utcnow() - timedelta(minutes=10)
+    base = datetime.now(UTC) - timedelta(minutes=10)
     msgs = []
     for i in range(8):
         role = "user" if i % 2 == 0 else "assistant"

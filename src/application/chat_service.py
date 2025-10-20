@@ -3,7 +3,7 @@ Servicio de aplicación para el chat con IA.
 Orquesta repositorios y servicio externo (Gemini) para procesar mensajes.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 
 from src.application.dtos import (
@@ -59,7 +59,7 @@ class ChatService:
         )
 
         # Guardar mensajes
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         user_msg = ChatMessage(
             id=None, session_id=request.session_id, role="user",
             message=request.message, timestamp=now
@@ -76,7 +76,7 @@ class ChatService:
             session_id=request.session_id,
             user_message=request.message,
             assistant_message=assistant_text,
-            timestamp=assistant_msg.timestamp,
+            timestamp=datetime.now(UTC),
         )
 
     def get_session_history(self, session_id: str, limit: Optional[int] = None):
