@@ -1,6 +1,8 @@
 """
 Servicio de IA con Google Gemini.
-Lee GEMINI_API_KEY de .env y genera respuestas usando el contexto y los productos.
+
+Lee GEMINI_API_KEY de .env y genera respuestas usando el contexto y los
+productos disponibles en el catálogo.
 """
 
 import os
@@ -14,7 +16,29 @@ load_dotenv()
 
 
 class GeminiService:
+    """Adaptador del proveedor de IA Google Gemini.
+
+    Configura la clave de API, instancia el modelo y expone la operación
+    de generación de contenido a partir de un prompt que incluye:
+    catálogo de productos, contexto conversacional y el mensaje del usuario.
+
+    Attributes:
+        model_name (str): Nombre del modelo configurado.
+        model: Instancia de `genai.GenerativeModel` activa para generar contenido.
+    """
+
     def __init__(self, model_name: str | None = None) -> None:
+        """Inicializa el servicio con el modelo especificado o el de .env.
+
+        Si no se especifica un `model_name`, intenta leer `GEMINI_MODEL` de
+        archivo de entorno. Como valor por defecto se usa `gemini-2.5-flash`.
+
+        Args:
+            model_name (str | None): Nombre del modelo a utilizar.
+
+        Raises:
+            RuntimeError: Si `GEMINI_API_KEY` no está configurada.
+        """
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY no configurada.")
@@ -27,6 +51,14 @@ class GeminiService:
         self.model = genai.GenerativeModel(self.model_name)
 
     def format_products_info(self, products: Iterable[Product]) -> str:
+        """Formatea la lista de productos para incluirla en el prompt.
+
+        Args:
+            products (Iterable[Product]): Productos del catálogo.
+
+        Returns:
+            str: Texto con una línea por producto (nombre, marca, precio, etc.).
+        """
         lines = [
             f"- {p.name} | {p.brand} | ${p.price:.2f} | Stock: {p.stock} | Talla: {p.size} | Color: {p.color}"
             for p in products
@@ -39,6 +71,18 @@ class GeminiService:
         products: Iterable[Product],
         context: Union[ChatContext, str],
     ) -> str:
+        """Construye el prompt consolidando catálogo, instrucciones e historial.
+
+        Acepta `context` como `ChatContext` o como `str` ya formateado.
+
+        Args:
+            user_message (str): Mensaje actual del usuario.
+            products (Iterable[Product]): Productos disponibles para recomendar.
+            context (ChatContext | str): Historial formateado o VO de contexto.
+
+        Returns:
+            str: Prompt final que se envía al modelo generativo.
+        """
         """
         Acepta `context` como ChatContext o como string ya formateado.
         """
@@ -65,6 +109,24 @@ class GeminiService:
         products: Iterable[Product],
         context: Union[ChatContext, str],
     ) -> str:
+        """Genera la respuesta del asistente usando el modelo configurado.
+
+        El prompt se arma con el catálogo, el historial (contexto) y el mensaje
+        actual del usuario. Internamente ejecuta la llamada de forma no
+        bloqueante usando `asyncio.to_thread`.
+
+        Args:
+            user_message (str): Texto del usuario.
+            products (Iterable[Product]): Productos disponibles.
+            context (ChatContext | str): Historial o texto formateado.
+
+        Returns:
+            str: Respuesta del asistente (texto no vacío) o un mensaje de fallback.
+
+        Raises:
+            Exception: Re-lanza la excepción si no es un caso soportado de
+                modelo inexistente/unsupported.
+        """
         """
         Genera la respuesta usando el modelo; `context` puede ser ChatContext o str.
         """

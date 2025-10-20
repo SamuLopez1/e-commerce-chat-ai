@@ -11,11 +11,10 @@ from src.infrastructure.db.models import ProductModel
 
 
 def load_initial_data() -> int:
-    """
-    Crea tablas (si no existen) y carga 10 productos si la tabla está vacía.
+    """Crea tablas (si no existen) y carga 10 productos si la tabla está vacía.
 
     Returns:
-        int: cantidad de productos insertados en esta ejecución.
+        int: Cantidad de productos insertados en esta ejecución.
     """
     init_db()
     db = SessionLocal()

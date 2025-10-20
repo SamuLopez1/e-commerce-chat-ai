@@ -1,6 +1,7 @@
-"""
-Servicio de aplicación para gestionar productos.
-Orquesta casos de uso sobre IProductRepository.
+"""Servicios de aplicación para la gestión de productos.
+
+Orquesta casos de uso sobre `IProductRepository`, aplicando validaciones
+de negocio y transformaciones desde/hacia DTOs.
 """
 
 from typing import Any, Dict, List, Optional
@@ -12,40 +13,61 @@ from .dtos import ProductDTO
 
 
 class ProductService:
-    """
-    Casos de uso de productos (Application Layer).
+    """Servicio de aplicación para gestionar productos del catálogo.
 
-    Constructor:
-        repo: IProductRepository (inyectado)
-    Métodos:
-        - get_all_products()
-        - get_product_by_id(product_id)
-        - search_products(filters)
-        - create_product(product_dto)
-        - update_product(product_id, product_dto)
-        - delete_product(product_id)
-        - get_available_products()
+    Usa un `IProductRepository` para persistir y consultar productos,
+    aplicando validaciones de negocio y transformaciones desde/hacia DTOs.
+
+    Attributes:
+        _repo (IProductRepository): Repositorio de productos inyectado.
     """
 
     def __init__(self, repo: IProductRepository):
+        """Inicializa el servicio con su repositorio.
+
+        Args:
+            repo (IProductRepository): Repositorio concreto de productos.
+        """
         self._repo = repo
 
     def get_all_products(self) -> List[Product]:
+        """Retorna todos los productos registrados.
+
+        Returns:
+            List[Product]: Lista completa de productos.
+        """
         return self._repo.get_all()
 
     def get_product_by_id(self, product_id: int) -> Product:
+        """Obtiene un producto por su identificador.
+
+        Args:
+            product_id (int): Identificador del producto a consultar.
+
+        Raises:
+            ProductNotFoundError: Si no existe un producto con ese ID.
+
+        Returns:
+            Product: Entidad del producto encontrado.
+        """
         prod = self._repo.get_by_id(product_id)
         if prod is None:
             raise ProductNotFoundError(product_id)
         return prod
 
     def search_products(self, filters: Optional[Dict[str, Any]] = None) -> List[Product]:
-        """
-        Filtra por criterios. Soporta:
+        """Busca productos según filtros simples.
+
+        Soporta filtros por:
           - brand
           - category
-        Otros criterios (size, color, min_price, max_price) se pueden
-        filtrar en memoria si llegan en `filters`.
+        Otros filtros (size, color, min_price, max_price) se aplican en memoria.
+
+        Args:
+            filters (dict | None): Diccionario de criterios de búsqueda.
+
+        Returns:
+            List[Product]: Resultados que cumplen con los filtros.
         """
         filters = filters or {}
         brand = filters.get("brand")
@@ -83,9 +105,20 @@ class ProductService:
         return [p for p in result if ok(p)]
 
     def create_product(self, product_dto: ProductDTO) -> Product:
-        """
-        Crea un Product desde ProductDTO y lo guarda.
-        Lanza InvalidProductDataError si el dominio rechaza los datos.
+        """Crea y persiste un nuevo producto a partir de un DTO.
+
+        Convierte el `ProductDTO` a entidad de dominio `Product` y lo guarda
+        mediante el repositorio. Si los datos no son válidos, la entidad de
+        dominio lanzará `ValueError`, que se encapsula como `InvalidProductDataError`.
+
+        Args:
+            product_dto (ProductDTO): Datos del producto.
+
+        Raises:
+            InvalidProductDataError: Si las validaciones del dominio fallan.
+
+        Returns:
+            Product: Entidad creada y persistida.
         """
         try:
             prod = Product(
@@ -105,8 +138,21 @@ class ProductService:
         return self._repo.save(prod)
 
     def update_product(self, product_id: int, product_dto: ProductDTO) -> Product:
-        """
-        Actualiza un producto existente. Valida existencia previa.
+        """Actualiza un producto existente.
+
+        Valida la existencia previa del producto y luego guarda la entidad
+        con los nuevos datos proporcionados por el DTO.
+
+        Args:
+            product_id (int): ID del producto a actualizar.
+            product_dto (ProductDTO): Datos nuevos.
+
+        Raises:
+            ProductNotFoundError: Si el producto no existe.
+            InvalidProductDataError: Si los datos no son válidos.
+
+        Returns:
+            Product: Entidad actualizada.
         """
         existing = self._repo.get_by_id(product_id)
         if existing is None:
@@ -130,8 +176,16 @@ class ProductService:
         return self._repo.save(updated)
 
     def delete_product(self, product_id: int) -> bool:
-        """
-        Elimina un producto. Lanza ProductNotFoundError si no existe.
+        """Elimina un producto por su ID.
+
+        Args:
+            product_id (int): Identificador del producto a eliminar.
+
+        Raises:
+            ProductNotFoundError: Si el producto no existe.
+
+        Returns:
+            bool: `True` si se eliminó, `False` en caso contrario.
         """
         existed = self._repo.delete(product_id)
         if not existed:
@@ -139,5 +193,9 @@ class ProductService:
         return True
 
     def get_available_products(self) -> List[Product]:
-        """Retorna solo productos con stock > 0."""
+        """Obtiene únicamente productos con stock disponible.
+
+        Returns:
+            List[Product]: Productos con `stock > 0`.
+        """
         return [p for p in self._repo.get_all() if p.is_available()]

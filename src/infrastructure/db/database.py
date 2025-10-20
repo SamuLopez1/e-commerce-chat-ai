@@ -22,16 +22,29 @@ else:
 engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
+
 class Base(DeclarativeBase):
-    """Base declarativa."""
+    """Base declarativa para los modelos ORM."""
+
 
 def get_session():
+    """Generador de sesiones de SQLAlchemy para inyección en FastAPI.
+
+    Yields:
+        Session: Sesión abierta que se cierra al finalizar el request.
+    """
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
 
+
 def init_db():
+    """Inicializa la base de datos creando todas las tablas registradas.
+
+    Importa los modelos para registrar los mapeos y ejecuta
+    `Base.metadata.create_all`.
+    """
     from . import models  # registra modelos
     Base.metadata.create_all(bind=engine)

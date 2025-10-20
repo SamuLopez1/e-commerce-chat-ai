@@ -4,6 +4,7 @@ Aplicación FastAPI con endpoints:
 - GET /products, GET /products/{id}
 - POST /chat, GET/DELETE /chat/history/{session_id}
 """
+
 from datetime import datetime
 from typing import List
 from fastapi import FastAPI, Depends, HTTPException
